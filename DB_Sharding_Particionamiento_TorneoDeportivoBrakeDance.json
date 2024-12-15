@@ -1,0 +1,276 @@
+/* CLUSTER-----------------------------------------------------------------------------------------------------------------------------------------------*/
+
+MongoDB shell version v4.2.25
+connecting to: mongodb://127.0.0.1:27017/?compressors=disabled&gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("201d086f-309d-4d80-b941-0d5c7ce8dfc3") }
+MongoDB server version: 4.2.25
+Server has startup warnings:
+2024-12-14T16:11:21.986-0500 I  CONTROL  [initandlisten]
+2024-12-14T16:11:21.986-0500 I  CONTROL  [initandlisten] ** WARNING: Access control is not enabled for the database.
+2024-12-14T16:11:21.986-0500 I  CONTROL  [initandlisten] **          Read and write access to data and configuration is unrestricted.
+2024-12-14T16:11:21.987-0500 I  CONTROL  [initandlisten]
+---
+Enable MongoDB's free cloud-based monitoring service, which will then receive and display
+metrics about your deployment (disk utilization, CPU, operation statistics, etc).
+
+The monitoring data will be available on a MongoDB website with a unique URL accessible to you
+and anyone you share the URL with. MongoDB may use this information to make product
+improvements and to suggest MongoDB products and deployment options to you.
+
+To enable free monitoring, run the following command: db.enableFreeMonitoring()
+To permanently disable this reminder, run the following command: db.disableFreeMonitoring()
+---
+
+
+>cluster=new ShardingTest ({shards: 3, chunksize:1})
+
+/* Balanceador---------------------------------------------------------------------------------------------------------------------------*/
+
+
+> db = (new Mongo("localhost:20006")).getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+mongos> for(i=0;i<1120000;i++){db.deportistasMasculinos.insert({nombre : "Deportista" + i,país :"PaisesABC" + i})};
+WriteResult({ "nInserted" : 1 })
+mongos> db.torneoDeportivoBrakeDance.count();
+0
+mongos> db.deportistasMasculinos.count();
+1120000
+mongos> shard1 = new Mongo("localhost:20006");
+connection to localhost:20006
+mongos> sh.status();
+--- Sharding Status ---
+  sharding version: {
+        "_id" : 1,
+        "minCompatibleVersion" : 5,
+        "currentVersion" : 6,
+        "clusterId" : ObjectId("675e5d5ffb215c8b83658420")
+  }
+  shards:
+        {  "_id" : "__unknown_name__-rs0",  "host" : "__unknown_name__-rs0/AndresCruz:20000",  "state" : 1 }
+        {  "_id" : "__unknown_name__-rs1",  "host" : "__unknown_name__-rs1/AndresCruz:20001",  "state" : 1 }
+        {  "_id" : "__unknown_name__-rs2",  "host" : "__unknown_name__-rs2/AndresCruz:20002",  "state" : 1 }
+  active mongoses:
+        "4.2.25" : 1
+  autosplit:
+        Currently enabled: no
+  balancer:
+        Currently enabled:  no
+        Currently running:  no
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours:
+                No recent migrations
+  databases:
+        {  "_id" : "config",  "primary" : "config",  "partitioned" : true }
+                config.system.sessions
+                        shard key: { "_id" : 1 }
+                        unique: false
+                        balancing: true
+                        chunks:
+                                __unknown_name__-rs0    1
+                        { "_id" : { "$minKey" : 1 } } -->> { "_id" : { "$maxKey" : 1 } } on : __unknown_name__-rs0 Timestamp(1, 0)
+        {  "_id" : "torneoDeportivoBrakeDance",  "primary" : "__unknown_name__-rs1",  "partitioned" : false,  "version" : {  "uuid" : UUID("4660ce19-2308-4bf0-8eb0-954e6a92c277"),  "lastMod" : 1 } }
+
+mongos> sh.enableSharding("torneoDeportivoBrakeDance");
+{
+        "ok" : 1,
+        "operationTime" : Timestamp(1734242497, 3),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1734242497, 3),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+mongos> db.deportistasMasculinos.ensureIndex({nombre:1});
+{
+        "raw" : {
+                "__unknown_name__-rs1/AndresCruz:20001" : {
+                        "createdCollectionAutomatically" : false,
+                        "numIndexesBefore" : 1,
+                        "numIndexesAfter" : 2,
+                        "ok" : 1
+                }
+        },
+        "ok" : 1,
+        "operationTime" : Timestamp(1734242745, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1734242745, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+mongos> sh.shardCollection("torneoDeportivoBrakeDance.deportistasMasculinos",{nombre:1});
+{
+        "collectionsharded" : "torneoDeportivoBrakeDance.deportistasMasculinos",
+        "collectionUUID" : UUID("fa362767-bb7f-4874-81d1-5dfd62a4d286"),
+        "ok" : 1,
+        "operationTime" : Timestamp(1734243595, 6),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1734243595, 6),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+mongos> sh.status();
+--- Sharding Status ---
+  sharding version: {
+        "_id" : 1,
+        "minCompatibleVersion" : 5,
+        "currentVersion" : 6,
+        "clusterId" : ObjectId("675e5d5ffb215c8b83658420")
+  }
+  shards:
+        {  "_id" : "__unknown_name__-rs0",  "host" : "__unknown_name__-rs0/AndresCruz:20000",  "state" : 1 }
+        {  "_id" : "__unknown_name__-rs1",  "host" : "__unknown_name__-rs1/AndresCruz:20001",  "state" : 1 }
+        {  "_id" : "__unknown_name__-rs2",  "host" : "__unknown_name__-rs2/AndresCruz:20002",  "state" : 1 }
+  active mongoses:
+        "4.2.25" : 1
+  autosplit:
+        Currently enabled: no
+  balancer:
+        Currently enabled:  no
+        Currently running:  no
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours:
+                No recent migrations
+  databases:
+        {  "_id" : "config",  "primary" : "config",  "partitioned" : true }
+                config.system.sessions
+                        shard key: { "_id" : 1 }
+                        unique: false
+                        balancing: true
+                        chunks:
+                                __unknown_name__-rs0    1
+                        { "_id" : { "$minKey" : 1 } } -->> { "_id" : { "$maxKey" : 1 } } on : __unknown_name__-rs0 Timestamp(1, 0)
+        {  "_id" : "torneoDeportivoBrakeDance",  "primary" : "__unknown_name__-rs1",  "partitioned" : true,  "version" : {  "uuid" : UUID("4660ce19-2308-4bf0-8eb0-954e6a92c277"),  "lastMod" : 1 } }
+                torneoDeportivoBrakeDance.deportistasMasculinos
+                        shard key: { "nombre" : 1 }
+                        unique: false
+                        balancing: true
+                        chunks:
+                                __unknown_name__-rs1    1
+                        { "nombre" : { "$minKey" : 1 } } -->> { "nombre" : { "$maxKey" : 1 } } on : __unknown_name__-rs1 Timestamp(1, 0)
+
+mongos> getBalancerState();
+2024-12-15T01:30:27.337-0500 E  QUERY    [js] ReferenceError: getBalancerState is not defined :
+@(shell):1:1
+mongos> sh.getBalancerState();
+false
+mongos> sh.setBalancerState(true);
+{
+        "ok" : 1,
+        "operationTime" : Timestamp(1734244360, 3),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1734244360, 3),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+mongos> sh.getBalancerState();
+true
+mongos> sh.isBalancerRunning();
+false
+mongos> shard1 = new Mongo("localhost:20000");
+connection to localhost:20000
+mongos> shard1DB = shard1.getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+mongos> shard1DB.deportistasMasculinos.count();
+0
+mongos> shard2 = new Mongo("localhost:20001");
+connection to localhost:20001
+mongos> shard2DB = shard2.getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+mongos> shard2DB.deportistasMasculinos.count();
+511.101
+mongos> shard3 = new Mongo("localhost:20002")
+connection to localhost:20002
+mongos> shard3DB = shard3.getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+mongos> shard3DB.deportistasMasculinos.count();
+608.899
+mongos> cluster.stop();
+2024-12-15T02:23:33.049-0500 E  QUERY    [js] ReferenceError: cluster is not defined :
+@(shell):1:1
+ db.adminCommand({listShards: 1});
+{
+        "shards" : [
+                {
+                        "_id" : "__unknown_name__-rs0",
+                        "host" : "__unknown_name__-rs0/AndresCruz:20000",
+                        "state" : 1
+                },
+                {
+                        "_id" : "__unknown_name__-rs1",
+                        "host" : "__unknown_name__-rs1/AndresCruz:20001",
+                        "state" : 1
+                },
+                {
+                        "_id" : "__unknown_name__-rs2",
+                        "host" : "__unknown_name__-rs2/AndresCruz:20002",
+                        "state" : 1
+                }
+        ],
+        "ok" : 1,
+        "operationTime" : Timestamp(1734247479, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1734247479, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+mongos>
+/* ------------------------ NODOS----------------------------------------------------------------------------------------*/
+
+MongoDB shell version v4.2.25
+connecting to: mongodb://127.0.0.1:27017/?compressors=disabled&gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("7d5c13d4-8875-437d-975b-9c63e00c4633") }
+MongoDB server version: 4.2.25
+Server has startup warnings:
+2024-12-14T16:11:21.986-0500 I  CONTROL  [initandlisten]
+2024-12-14T16:11:21.986-0500 I  CONTROL  [initandlisten] ** WARNING: Access control is not enabled for the database.
+2024-12-14T16:11:21.986-0500 I  CONTROL  [initandlisten] **          Read and write access to data and configuration is unrestricted.
+2024-12-14T16:11:21.987-0500 I  CONTROL  [initandlisten]
+---
+Enable MongoDB's free cloud-based monitoring service, which will then receive and display
+metrics about your deployment (disk utilization, CPU, operation statistics, etc).
+
+The monitoring data will be available on a MongoDB website with a unique URL accessible to you
+and anyone you share the URL with. MongoDB may use this information to make product
+improvements and to suggest MongoDB products and deployment options to you.
+
+To enable free monitoring, run the following command: db.enableFreeMonitoring()
+To permanently disable this reminder, run the following command: db.disableFreeMonitoring()
+---
+
+> shard1 = new Mongo("localhost:2000");
+2024-12-15T00:35:33.971-0500 E  QUERY    [js] Error: couldn't connect to server localhost:2000, connection attempt failed: SocketException: Error connecting to localhost:2000 (127.0.0.1:2000) :: caused by :: No se puede establecer una conexi n ya que el equipo de destino deneg  expresamente dicha conexi n. :
+@(shell):1:10
+> shard1 = new Mongo("localhost:20000");
+connection to localhost:20000
+> shard1DB = shard1.getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+> shard1DB.deportistasMasculinos.count();
+0
+> shard2 = new Mongo("localhost:20001");
+connection to localhost:20001
+> shard2DB = shard2.getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+> shard2DB.deportistasMasculinos.count();
+1120000
+> shard3 = new Mongo("localhost:20002");
+connection to localhost:20002
+> shard3DB = shard3.getDB("torneoDeportivoBrakeDance");
+torneoDeportivoBrakeDance
+> shard3DB.deportistasMasculinos.count();
+0
+
+
